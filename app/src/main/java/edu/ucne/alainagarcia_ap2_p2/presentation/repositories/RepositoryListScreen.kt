@@ -63,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.alainagarcia_ap2_p2.data.remote.dto.RepositoryDto
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,8 +80,13 @@ fun RepositoryListScreen(
     val context = LocalContext.current
     var lastRetentionCount by remember { mutableStateOf(0) }
 
+    //Para la busqueda
+    val query by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
-        viewModel.getRepository("enelramon")
+        delay(180000)
+        viewModel.onEvent(RepositoryEvent.GetRepositories)
     }
 
     LaunchedEffect(uiState.repository) {
@@ -98,10 +104,13 @@ fun RepositoryListScreen(
         drawerState = drawerState,
         scope = scope,
         uiState = uiState,
-        reloadRepository = { viewModel.getRepository("enelramon") },
+        reloadRepository = { viewModel.onEvent(RepositoryEvent.GetRepositories) },
         goToRepository = goToRepository,
         createRepository = createRepository,
-        deleteRepository = deleteRepository
+        deleteRepository = deleteRepository,
+        query = query,
+        searchResults = searchResults,
+        onSearchQueryChanged = viewModel::onSearchQueryChanged
     )
 }
 
@@ -114,9 +123,11 @@ fun RepositoryListBodyScreen(
     reloadRepository: () -> Unit,
     goToRepository: (String) -> Unit,
     createRepository: () -> Unit,
-    deleteRepository: ((RepositoryDto) -> Unit)? = null
+    deleteRepository: ((RepositoryDto) -> Unit)? = null,
+    query: String,
+    searchResults: List<RepositoryDto>,
+    onSearchQueryChanged: (String) -> Unit
 ) {
-
     val pullRefreshState = rememberPullRefreshState(
         refreshing = uiState.isLoading,
         onRefresh = reloadRepository
@@ -160,8 +171,7 @@ fun RepositoryListBodyScreen(
             ) {
                 Icon(Icons.Filled.Add, "Crear nuevo repositorio")
             }
-        },
-
+        }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -176,6 +186,7 @@ fun RepositoryListBodyScreen(
                         color = Color.Cyan
                     )
                 }
+
                 uiState.repository.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -188,13 +199,25 @@ fun RepositoryListBodyScreen(
                         )
                     }
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .padding(16.dp)
                     ) {
-                        items(uiState.repository) { repository ->
+                        //Para la busqueda
+                        item {
+                            SearchBar(
+                                query = query,
+                                onQueryChanged = onSearchQueryChanged
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        val reposToShow = if (query.isNotBlank()) searchResults else uiState.repository
+
+                        items(reposToShow) { repository ->
                             RepositoryCard(
                                 repository = repository,
                                 goToRepository = { goToRepository(repository.name) },
@@ -206,14 +229,12 @@ fun RepositoryListBodyScreen(
                 }
             }
 
-
             PullRefreshIndicator(
                 refreshing = uiState.isLoading,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
                 contentColor = Color.Cyan
             )
-
 
             if (!uiState.errorMessage.isNullOrEmpty()) {
                 Box(
@@ -231,6 +252,7 @@ fun RepositoryListBodyScreen(
         }
     }
 }
+
 
 @Composable
 fun RepositoryCard(
@@ -290,4 +312,21 @@ fun RepositoryCard(
             }
         }
     }
+}
+
+//Para la busqueda
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChanged: (String) -> Unit
+) {
+    androidx.compose.material3.OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChanged,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        label = { Text("Buscar repositorio...") },
+        singleLine = true
+    )
 }
