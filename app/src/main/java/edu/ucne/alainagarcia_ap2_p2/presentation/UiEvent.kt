@@ -1,4 +1,4 @@
-package edu.ucne.alainagarcia_ap2_p2.presentation.repositories
+package edu.ucne.alainagarcia_ap2_p2.presentation
 
 sealed class UiEvent {
     object NavigateUp : UiEvent()
