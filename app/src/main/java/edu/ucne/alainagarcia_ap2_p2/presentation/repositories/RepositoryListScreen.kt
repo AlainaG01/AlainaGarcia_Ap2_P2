@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -74,7 +75,8 @@ fun RepositoryListScreen(
     viewModel: RepositoryViewModel = hiltViewModel(),
     goToRepository: (String) -> Unit,
     createRepository: () -> Unit,
-    deleteRepository: ((RepositoryDto) -> Unit)? = null
+    deleteRepository: ((RepositoryDto) -> Unit)? = null,
+    goToContributors: (String, String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -110,7 +112,8 @@ fun RepositoryListScreen(
         deleteRepository = deleteRepository,
         query = query,
         searchResults = searchResults,
-        onSearchQueryChanged = viewModel::onSearchQueryChanged
+        onSearchQueryChanged = viewModel::onSearchQueryChanged,
+        goToContributors = goToContributors
     )
 }
 
@@ -126,7 +129,8 @@ fun RepositoryListBodyScreen(
     deleteRepository: ((RepositoryDto) -> Unit)? = null,
     query: String,
     searchResults: List<RepositoryDto>,
-    onSearchQueryChanged: (String) -> Unit
+    onSearchQueryChanged: (String) -> Unit,
+    goToContributors: (String, String) -> Unit
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = uiState.isLoading,
@@ -221,7 +225,9 @@ fun RepositoryListBodyScreen(
                             RepositoryCard(
                                 repository = repository,
                                 goToRepository = { goToRepository(repository.name) },
-                                deleteRepository = deleteRepository
+                                deleteRepository = deleteRepository,
+                                { goToContributors("enelramon", repository.name) }
+
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -253,12 +259,12 @@ fun RepositoryListBodyScreen(
     }
 }
 
-
 @Composable
 fun RepositoryCard(
     repository: RepositoryDto,
     goToRepository: () -> Unit,
-    deleteRepository: ((RepositoryDto) -> Unit)?
+    deleteRepository: ((RepositoryDto) -> Unit)?,
+    onViewContributors: () -> Unit
 ) {
     Card(
         elevation = CardDefaults.cardElevation(4.dp),
@@ -309,6 +315,17 @@ fun RepositoryCard(
                     color = Color.Gray,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                TextButton(
+                    onClick = onViewContributors,
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text(
+                        text = "Ver Colaboradores",
+                        color = MaterialTheme.colorScheme.secondary,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
         }
     }
