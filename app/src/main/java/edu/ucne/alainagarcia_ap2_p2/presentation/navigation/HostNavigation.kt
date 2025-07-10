@@ -7,6 +7,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import edu.ucne.alainagarcia_ap2_p2.presentation.contributors.ContributorListScreen
 import edu.ucne.alainagarcia_ap2_p2.presentation.repositories.RepositoryListScreen
 
 @Composable
@@ -20,16 +22,36 @@ fun HostNavigation(
         navController = navHostController,
         startDestination = Screen.RepositoryList
     ) {
+
         composable<Screen.RepositoryList> {
             RepositoryListScreen(
-                goToRepository = { id ->
-                    navHostController.navigate(Screen.Repository(null))
+                goToRepository = { repoName ->
+                    navHostController.navigate(
+                        Screen.ContributorList(
+                            owner = "enelramon",
+                            repo = repoName
+                        )
+                    )
                 },
                 createRepository = {
                     navHostController.navigate(Screen.Repository(null))
                 },
                 drawerState = drawerState,
-                scope = scope
+                scope = scope,
+                goToContributors = { owner, repoName ->
+                    navHostController.navigate(Screen.ContributorList(owner, repoName))
+                }
+            )
+        }
+
+        composable<Screen.ContributorList> { backStackEntry ->
+            val owner = backStackEntry.toRoute<Screen.ContributorList>().owner
+            val repo = backStackEntry.toRoute<Screen.ContributorList>().repo
+
+            ContributorListScreen(
+                owner = owner,
+                repo = repo,
+                onBack = { navHostController.popBackStack() }
             )
         }
     }
